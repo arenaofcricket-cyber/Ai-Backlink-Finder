@@ -183,8 +183,10 @@ export default function App() {
   const [results, setResults] = useState<any[]>([]);
   const [refinement, setRefinement] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestedNiches, setSuggestedNiches] = useState<string[]>([]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [isNichesExpanded, setIsNichesExpanded] = useState(true);
+  const [nicheSearch, setNicheSearch] = useState('');
   const [referenceUrl, setReferenceUrl] = useState('');
   const [isAnalyzingRef, setIsAnalyzingRef] = useState(false);
   const [analyzedNiche, setAnalyzedNiche] = useState<string[]>([]);
@@ -194,22 +196,27 @@ export default function App() {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [isCompact, setIsCompact] = useState(false);
 
+  const filteredNiches = useMemo(() => {
+    return ALL_NICHES.filter(n => n.toLowerCase().includes(nicheSearch.toLowerCase()));
+  }, [nicheSearch]);
+
   const scoredResults = useMemo(() => {
-    const extractKeywords = (u: string, k: string) => {
+    const extractKeywords = (u: string, k: string, sn: string[]) => {
       const base = (u + " " + k).toLowerCase()
         .replace(/https?:\/\/|www\./g, "")
         .split(/[\s.,\-_/]+/)
         .filter(w => w.length > 2);
       
-      // Add analyzed niches and broader topics to keywords for scoring
+      // Add analyzed niches, broader topics, and manually selected niches to keywords for scoring
       return [...new Set([
         ...base, 
         ...analyzedNiche.map(n => n.toLowerCase()),
-        ...broaderTopics.map(t => t.toLowerCase())
+        ...broaderTopics.map(t => t.toLowerCase()),
+        ...sn.map(n => n.toLowerCase())
       ])];
     };
 
-    const keywords = extractKeywords(url, keyword);
+    const keywords = extractKeywords(url, keyword, selectedNiches);
 
     const score = (item: any, kws: string[]) => {
       let s = 0;
@@ -242,6 +249,16 @@ export default function App() {
       if (nicheMatches >= 2) s += 15;
       // Broader Topic Bonus: If the site matches the broader industry context
       if (broaderTopicMatches >= 1) s += 10;
+      // Boost for keyword-only search
+      if (!url && nicheMatches > 0) s += 20;
+      
+      // Boost for manually selected niches
+      if (selectedNiches.length > 0) {
+        const manualMatches = item.niche.filter((n: string) => 
+          selectedNiches.some(sn => sn.toLowerCase() === n.toLowerCase())
+        ).length;
+        s += manualMatches * 30;
+      }
 
       // 2. DA Similarity Score if analyzedDA is present
       if (analyzedDA !== null) {
@@ -251,17 +268,15 @@ export default function App() {
       }
 
       // 3. Anchor Text Relevance & Contextual Fit
-      const contentText = (item.name + " " + item.note).toLowerCase();
+      const contentText = (item.name + " " + item.note + " " + (item.meta || "")).toLowerCase();
       
-      let keywordDensity = 0;
       for (const kw of kws) {
         const lowerKw = kw.toLowerCase();
         const isBroader = broaderTopics.some(t => t.toLowerCase() === lowerKw);
         const parts = contentText.split(lowerKw);
         const count = parts.length - 1;
         if (count > 0) {
-          s += count * (isBroader ? 2 : 6); // Broader terms count less for density
-          keywordDensity += count;
+          s += count * (isBroader ? 5 : 12); // Higher weight for direct keyword matches in content
         }
       }
 
@@ -296,38 +311,58 @@ export default function App() {
       .sort((a, b) => b.score - a.score);
 
     let finalResults: any[] = scored.filter(i => i.score > 0);
+    
+    // Relevance Noise Filter: If we have high relevance results, filter out the low-score noise
+    if (finalResults.length > 0) {
+      const maxScore = Math.max(...finalResults.map(i => i.score));
+      if (maxScore > 80) {
+        // Only show results that have at least 15% of the top score to ensure topical relevance
+        finalResults = finalResults.filter(i => i.score >= maxScore * 0.15);
+      }
+    }
+
     if (finalResults.length === 0) {
       finalResults = [...DB].map(item => ({ ...item, score: 0 })).sort((a, b) => b.da - a.da);
     }
     return finalResults;
-  }, [url, keyword, analyzedNiche, analyzedDA, broaderTopics]);
+  }, [url, keyword, analyzedNiche, analyzedDA, broaderTopics, selectedNiches]);
 
-  const fetchBroaderTopics = async (kw: string) => {
+  const analyzeKeyword = async (kw: string) => {
     if (!kw) return;
     setIsAnalyzingTopics(true);
+    setBroaderTopics([]);
     try {
-      const prompt = `For the SEO keyword "${kw}", identify 3-5 broader industry topics or parent niches. Return ONLY a comma-separated list. Example for "SaaS SEO": "Software, Technology, Marketing, Business"`;
+      const prompt = `For the SEO keyword "${kw}", analyze it and provide:
+      1. 3-5 broader industry topics or parent niches.
+      2. 2-3 specific sub-niches it belongs to.
+      
+      Return ONLY a JSON object with "broaderTopics" (array) and "niches" (array).
+      Example for "SaaS SEO": {"broaderTopics": ["Software", "Technology", "Marketing"], "niches": ["SaaS", "B2B Marketing"]}`;
+      
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
+        config: { responseMimeType: "application/json" }
       });
-      const topics = response.text?.split(',').map(t => t.trim()) || [];
-      setBroaderTopics(topics);
+
+      const data = JSON.parse(response.text || "{}");
+      if (data.broaderTopics) setBroaderTopics(data.broaderTopics);
+      if (data.niches && analyzedNiche.length === 0) setAnalyzedNiche(data.niches);
     } catch (error) {
-      console.error("Error fetching broader topics:", error);
+      console.error("Error analyzing keyword:", error);
     } finally {
       setIsAnalyzingTopics(false);
     }
   };
 
-  const analyzeReferenceUrl = async () => {
-    if (!referenceUrl) return;
+  const analyzeUrl = async (targetUrl: string) => {
+    if (!targetUrl) return;
     setIsAnalyzingRef(true);
     setAnalyzedNiche([]);
     setAnalyzedDA(null);
     setBroaderTopics([]);
     try {
-      const prompt = `Analyze the website URL "${referenceUrl}". Determine its primary niches (max 3), estimate its Domain Authority (DA) on a scale of 1-100, and identify 3-5 broader industry topics or parent niches related to its primary niches. 
+      const prompt = `Analyze the website URL "${targetUrl}". Determine its primary niches (max 3), estimate its Domain Authority (DA) on a scale of 1-100, and identify 3-5 broader industry topics or parent niches related to its primary niches. 
       Return ONLY a JSON object with "niches" (array of strings), "da" (number), and "broaderTopics" (array of strings). Example: {"niches": ["SaaS SEO", "Content Marketing"], "da": 85, "broaderTopics": ["Software", "Technology", "Marketing", "Business"]}`;
       
       const response = await ai.models.generateContent({
@@ -342,7 +377,7 @@ export default function App() {
       if (data.broaderTopics) setBroaderTopics(data.broaderTopics);
       setHasSearched(true);
     } catch (error) {
-      console.error("Error analyzing reference URL:", error);
+      console.error("Error analyzing URL:", error);
     } finally {
       setIsAnalyzingRef(false);
     }
@@ -352,21 +387,34 @@ export default function App() {
     if (!inputUrl && !inputKw) return;
     
     setIsGeneratingSuggestions(true);
+    setSuggestions([]);
+    setSuggestedNiches([]);
     try {
-      const prompt = `Given a website URL "${inputUrl}" and a target keyword "${inputKw}", suggest 5-7 highly relevant, short link-building keywords or niches that would help find backlink opportunities. Return ONLY a comma-separated list of keywords. No explanations.`;
+      const nicheList = ALL_NICHES.join(', ');
+      const prompt = `Given a website URL "${inputUrl}" and a target keyword "${inputKw}", provide:
+      1. 5-7 highly relevant, short link-building keywords.
+      2. 3-5 most relevant niches from this list: [${nicheList}].
+      
+      Return ONLY a JSON object with "keywords" (array) and "niches" (array).
+      Example: {"keywords": ["SaaS SEO", "B2B Marketing"], "niches": ["SaaS", "Marketing"]}`;
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
+        config: { responseMimeType: "application/json" }
       });
 
-      const text = response.text || "";
-      const suggestedKws = text.split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && s.toLowerCase() !== inputKw.toLowerCase())
-        .slice(0, 6);
+      const data = JSON.parse(response.text || "{}");
       
-      setSuggestions(suggestedKws);
+      if (data.keywords) {
+        setSuggestions(data.keywords.filter((s: string) => s.toLowerCase() !== inputKw.toLowerCase()).slice(0, 7));
+      }
+      
+      if (data.niches) {
+        // Only keep niches that actually exist in our ALL_NICHES list
+        const validNiches = data.niches.filter((n: string) => ALL_NICHES.includes(n));
+        setSuggestedNiches(validNiches);
+      }
     } catch (error) {
       console.error("Error generating suggestions:", error);
     } finally {
@@ -381,13 +429,19 @@ export default function App() {
     if (!isGeneratingSuggestions) {
       generateSuggestions(url, searchKw);
     }
-    fetchBroaderTopics(searchKw);
+    
+    if (searchKw) {
+      analyzeKeyword(searchKw);
+    } else if (url) {
+      analyzeUrl(url);
+    }
   };
 
   const handleSuggestionClick = (sug: string) => {
     setKeyword(sug);
     setHasSearched(true);
     generateSuggestions(url, sug);
+    analyzeKeyword(sug);
   };
 
   const baseFilteredResults = useMemo(() => {
@@ -444,7 +498,7 @@ export default function App() {
     });
   };
 
-  const isSearching = hasSearched;
+  const isSearching = hasSearched || selectedNiches.length > 0;
 
   return (
     <div className="min-h-screen bg-bg py-12 px-4 sm:px-6">
@@ -519,7 +573,7 @@ export default function App() {
                   )}
                 </div>
                 <button
-                  onClick={analyzeReferenceUrl}
+                  onClick={() => analyzeUrl(referenceUrl)}
                   disabled={isAnalyzingRef || !referenceUrl}
                   className="h-10 px-6 bg-accent/10 text-accent rounded-xl text-sm font-medium hover:bg-accent/20 active:scale-95 transition-all whitespace-nowrap flex items-center justify-center gap-2 disabled:opacity-50 disabled:scale-100"
                 >
@@ -561,6 +615,7 @@ export default function App() {
                       setAnalyzedDA(null);
                       setReferenceUrl('');
                       setBroaderTopics([]);
+                      setSuggestedNiches([]);
                     }}
                     className="text-[10px] text-text-dim hover:text-accent underline ml-1"
                   >
@@ -623,7 +678,7 @@ export default function App() {
                     </motion.div>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {suggestions.map((sug, idx) => (
                     <motion.button
                       key={sug + idx}
@@ -637,6 +692,39 @@ export default function App() {
                     </motion.button>
                   ))}
                 </div>
+
+                {suggestedNiches.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-border-subtle/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Folder className="w-3 h-3 text-accent" />
+                      <span className="text-[10px] font-semibold text-text-dim uppercase tracking-wider">
+                        Suggested Niches
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestedNiches.map((niche, idx) => (
+                        <motion.button
+                          key={niche + idx}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.05 }}
+                          onClick={() => {
+                            if (!selectedNiches.includes(niche)) {
+                              setSelectedNiches([...selectedNiches, niche]);
+                            }
+                          }}
+                          className={`px-3 py-1 text-[11px] rounded-lg transition-all border ${
+                            selectedNiches.includes(niche)
+                              ? 'bg-accent text-white border-accent shadow-sm'
+                              : 'bg-surface-2 hover:bg-accent/10 hover:text-accent text-text-muted border-transparent hover:border-accent/20'
+                          }`}
+                        >
+                          {niche}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -701,8 +789,26 @@ export default function App() {
                     exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-border-strong">
-                      {ALL_NICHES.map((niche) => (
+                    <div className="mb-3 relative">
+                      <input
+                        type="text"
+                        placeholder="Search niches..."
+                        className="w-full h-8 pl-8 pr-3 bg-surface-2 border border-border-subtle rounded-lg text-[11px] focus:outline-none focus:ring-1 focus:ring-accent/30 transition-all"
+                        value={nicheSearch}
+                        onChange={(e) => setNicheSearch(e.target.value)}
+                      />
+                      <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-dim" />
+                      {nicheSearch && (
+                        <button 
+                          onClick={() => setNicheSearch('')}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-dim hover:text-text-main"
+                        >
+                          <XCircle className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-border-strong">
+                      {filteredNiches.map((niche) => (
                         <button
                           key={niche}
                           onClick={() => {
@@ -714,13 +820,16 @@ export default function App() {
                           }}
                           className={`px-3 py-1 rounded-lg text-[11px] font-medium border transition-all ${
                             selectedNiches.includes(niche)
-                              ? 'bg-accent/10 text-accent border-accent/30'
+                              ? 'bg-accent/10 text-accent border-accent/30 shadow-sm'
                               : 'bg-transparent text-text-muted border-border-strong hover:bg-surface-2'
                           }`}
                         >
                           {niche.charAt(0).toUpperCase() + niche.slice(1)}
                         </button>
                       ))}
+                      {filteredNiches.length === 0 && (
+                        <p className="text-[10px] text-text-dim py-2 italic">No niches match your search.</p>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -879,7 +988,7 @@ export default function App() {
               </div>
               <AnimatePresence mode="popLayout">
                 {filteredResults.map((item, idx) => (
-                  <ResultCard key={`${item.name}-${idx}`} item={item} index={idx} isCompact={isCompact} />
+                  <ResultCard key={item.url} item={item} index={idx} isCompact={isCompact} />
                 ))}
               </AnimatePresence>
               {filteredResults.length === 0 && (
@@ -940,6 +1049,7 @@ function LinkStatusChecker({ url }: { url: string }) {
   return (
     <div className="flex items-center gap-2">
       <button
+        type="button"
         onClick={checkLink}
         disabled={isLoading}
         className="flex items-center gap-1.5 px-2 py-1 bg-surface-2 border border-border-subtle rounded-lg text-[10px] font-medium text-text-muted hover:border-accent/30 hover:text-accent transition-all disabled:opacity-50"
@@ -1010,22 +1120,27 @@ function ResultCard({ item, index, isCompact }: ResultCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.05, 0.5) }}
-      className={`group relative bg-surface border border-border-subtle rounded-2xl hover:border-border-strong transition-all shadow-sm overflow-hidden ${isCompact ? 'p-3' : 'p-5'}`}
+      className={`group relative bg-surface border border-border-subtle rounded-2xl hover:border-border-strong transition-all shadow-sm ${isCompact ? 'p-3' : 'p-5'}`}
     >
       <div className={`flex ${isCompact ? 'flex-row items-center gap-4' : 'flex-col sm:flex-row gap-5'}`}>
         {/* Screenshot Preview with Zoom */}
         {!isCompact && (
-          <div className="w-full sm:w-40 h-24 rounded-xl overflow-hidden bg-surface-2 border border-border-subtle shrink-0 relative group-hover:border-accent/30 transition-colors">
+          <div className="w-full sm:w-40 h-24 rounded-xl overflow-hidden bg-surface-2 border border-border-subtle shrink-0 relative group-hover:border-accent/40 transition-all duration-500 shadow-sm group-hover:shadow-md">
             <motion.img
               src={screenshotUrl}
               alt={`${item.name} screenshot`}
               className="w-full h-full object-cover object-top"
               referrerPolicy="no-referrer"
               loading="lazy"
-              animate={{ scale: isHovered ? 1.15 : 1 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
+              animate={{ 
+                scale: isHovered ? 1.25 : 1,
+                filter: isHovered ? "brightness(1.05) contrast(1.05)" : "brightness(1) contrast(1)"
+              }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end justify-center pb-2">
+              <span className="text-[9px] font-bold text-white uppercase tracking-widest drop-shadow-md">Preview</span>
+            </div>
           </div>
         )}
 
@@ -1062,10 +1177,14 @@ function ResultCard({ item, index, isCompact }: ResultCardProps) {
             </div>
             
             {!isCompact && (
-              <div className="mt-3">
+              <div className="mt-3 relative z-20">
                 <button 
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-wider hover:opacity-80 transition-opacity mb-1"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsExpanded(!isExpanded);
+                  }}
+                  className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-wider hover:opacity-80 transition-opacity mb-1 cursor-pointer"
                 >
                   Strategy
                   {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -1096,28 +1215,33 @@ function ResultCard({ item, index, isCompact }: ResultCardProps) {
                   initial={{ opacity: 0, y: 10, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                  className={`mt-4 p-4 bg-surface-2 border border-border-strong rounded-2xl shadow-xl z-10 relative ${isCompact ? 'absolute left-0 right-0 top-full mt-2' : ''}`}
+                  className={`mt-4 p-4 bg-surface border border-border-strong rounded-2xl shadow-2xl z-50 relative ${isCompact ? 'absolute left-0 right-0 top-full mt-2' : ''}`}
                 >
                   {isLoadingInfo ? (
-                    <div className="flex items-center justify-center py-4 gap-3 text-xs text-text-dim font-medium">
+                    <div className="flex items-center justify-center py-6 gap-3 text-xs text-text-dim font-medium">
                       <Loader2 className="w-4 h-4 animate-spin text-accent" />
                       Analyzing live content...
                     </div>
                   ) : pageInfo ? (
                     <div className="space-y-4">
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">Live Preview</span>
+                        </div>
                         {pageInfo.favicon && (
                           <img 
                             src={pageInfo.favicon} 
                             alt="favicon" 
-                            className="w-5 h-5 rounded shrink-0 mt-0.5"
+                            className="w-4 h-4 rounded shrink-0"
                             onError={(e) => (e.currentTarget.style.display = 'none')}
                           />
                         )}
-                        <div className="min-w-0">
-                          <div className="text-[10px] font-bold text-accent uppercase tracking-wider mb-0.5">Live Page Title</div>
-                          <p className="text-sm text-text-main font-semibold leading-tight">{pageInfo.title}</p>
-                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider">Page Title</div>
+                        <p className="text-sm text-text-main font-semibold leading-tight line-clamp-2">{pageInfo.title}</p>
                       </div>
 
                       <div className="grid grid-cols-1 gap-3 pt-3 border-t border-border-subtle">
@@ -1129,7 +1253,7 @@ function ResultCard({ item, index, isCompact }: ResultCardProps) {
                         </div>
                         
                         <div>
-                          <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider mb-1">Content Preview</div>
+                          <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider mb-1">Content Snippet</div>
                           <p className="text-xs text-text-muted leading-relaxed line-clamp-3">
                             {pageInfo.firstParagraph}
                           </p>
@@ -1137,15 +1261,18 @@ function ResultCard({ item, index, isCompact }: ResultCardProps) {
                       </div>
 
                       <div className="pt-2 flex items-center gap-2">
-                        <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider">Primary Heading:</div>
-                        <span className="text-[10px] px-2 py-0.5 bg-accent/5 text-accent rounded-md font-medium truncate">
+                        <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider">H1:</div>
+                        <span className="text-[10px] px-2 py-0.5 bg-accent/5 text-accent rounded-md font-medium truncate max-w-[200px]">
                           {pageInfo.h1}
                         </span>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider mb-1">Site Preview (Cached):</div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-text-dim rounded-full" />
+                        <span className="text-[10px] font-bold text-text-dim uppercase tracking-wider">Cached Meta</span>
+                      </div>
                       <p className="text-xs text-text-muted italic leading-relaxed">
                         "{item.meta}"
                       </p>

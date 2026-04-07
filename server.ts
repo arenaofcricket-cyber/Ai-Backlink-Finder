@@ -24,20 +24,33 @@ async function startServer() {
       });
       
       const $ = cheerio.load(response.data);
-      const title = $('title').text().trim() || 'No title found';
-      const h1 = $('h1').first().text().trim() || 'No H1 found';
+      const title = $('title').text().trim() || 
+                    $('meta[property="og:title"]').attr('content')?.trim() || 
+                    $('meta[name="twitter:title"]').attr('content')?.trim() || 
+                    'No title found';
+      
+      const h1 = $('h1').first().text().trim() || 
+                 $('h2').first().text().trim() || 
+                 'No heading found';
+      
       const metaDescription = $('meta[name="description"]').attr('content')?.trim() || 
                              $('meta[property="og:description"]').attr('content')?.trim() || 
+                             $('meta[name="twitter:description"]').attr('content')?.trim() || 
                              'No description found';
       
       // Fetch first meaningful paragraph
-      const firstParagraph = $('p').filter((_, el) => $(el).text().trim().length > 50).first().text().trim() || 
-                            $('p').first().text().trim() || 
-                            'No content preview available';
+      const firstParagraph = $('p').filter((_, el) => {
+        const text = $(el).text().trim();
+        return text.length > 60 && !text.includes('cookie') && !text.includes('javascript');
+      }).first().text().trim() || 
+      $('p').first().text().trim() || 
+      'No content preview available';
 
       // Favicon detection
-      let favicon = $('link[rel="shortcut icon"]').attr('href') || 
+      let favicon = $('link[rel="apple-touch-icon"]').attr('href') ||
+                    $('link[rel="shortcut icon"]').attr('href') || 
                     $('link[rel="icon"]').attr('href') || 
+                    $('link[rel*="icon"]').attr('href') ||
                     '/favicon.ico';
       
       if (favicon && !favicon.startsWith('http')) {
@@ -57,18 +70,39 @@ async function startServer() {
       return res.status(400).json({ error: "URL is required" });
     }
 
+    console.log(`Checking link: ${url}`);
     try {
-      // Use a short timeout to avoid hanging
-      const response = await axios.get(url, { 
+      // Try HEAD request first as it's lighter
+      const response = await axios.head(url, { 
         timeout: 5000,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         },
-        validateStatus: () => true // Don't throw on error codes
+        validateStatus: () => true
       });
+      
+      // If HEAD fails or returns 405/403, try GET
+      if (response.status >= 400) {
+        const getResponse = await axios.get(url, {
+          timeout: 5000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          },
+          validateStatus: () => true
+        });
+        console.log(`Link check (GET) result for ${url}: ${getResponse.status}`);
+        return res.json({ status: getResponse.status });
+      }
+
+      console.log(`Link check (HEAD) result for ${url}: ${response.status}`);
       res.json({ status: response.status });
     } catch (error: any) {
-      res.json({ status: error.response?.status || 500, error: error.message });
+      console.error(`Error checking link ${url}:`, error.message);
+      res.json({ 
+        status: error.response?.status || 500, 
+        error: error.message,
+        details: "Could not reach the server. It might be blocking automated requests or is currently offline."
+      });
     }
   });
 
