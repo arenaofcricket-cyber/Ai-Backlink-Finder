@@ -19,7 +19,9 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
-  Activity
+  Activity,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
@@ -77,7 +79,68 @@ const DB = [
   { name: "Flickr", url: "https://flickr.com", cat: "Social", da: 92, niche: ["photography", "creative", "art"], note: "Add your website link to your profile bio and photo descriptions.", meta: "Flickr is almost certainly the best online photo management and sharing application in the world." },
   { name: "Dailymotion", url: "https://dailymotion.com", cat: "Social", da: 93, niche: ["video", "news", "entertainment"], note: "Include your website URL in your channel description and video metadata.", meta: "The latest news, sports, music and entertainment videos on Dailymotion." },
   { name: "Twitch", url: "https://twitch.tv", cat: "Social", da: 93, niche: ["gaming", "tech", "entertainment"], note: "Add panels with links to your website on your channel page.", meta: "Twitch is the world's leading video platform and community for gamers." },
-  { name: "Patreon", url: "https://patreon.com", cat: "Social", da: 92, niche: ["creative", "content", "business"], note: "Link to your main site from your creator profile and public posts.", meta: "Patreon is a creator-founded platform that helps creators build memberships by providing exclusive access to their work." }
+  { name: "Patreon", url: "https://patreon.com", cat: "Social", da: 92, niche: ["creative", "content", "business"], note: "Link to your main site from your creator profile and public posts.", meta: "Patreon is a creator-founded platform that helps creators build memberships by providing exclusive access to their work." },
+  { name: "Blogger", url: "https://blogger.com", cat: "Guest Post", da: 99, niche: ["all"], note: "Create a free blog and link to your main site; high authority domain.", meta: "Publish your passions your way. Whether you'd like to share your knowledge, experiences or the latest news." },
+  { name: "WordPress.com", url: "https://wordpress.com", cat: "Guest Post", da: 94, niche: ["all"], note: "Start a free blog on the world's most popular CMS platform.", meta: "Create a free website or build a blog with ease on WordPress.com. Dozens of free, customizable, mobile-ready designs." },
+  { name: "Tumblr", url: "https://tumblr.com", cat: "Social", da: 86, niche: ["all"], note: "Microblogging platform; share links and content with dofollow potential.", meta: "Tumblr is a place to express yourself, discover yourself, and bond over the stuff you love." },
+  { name: "LiveJournal", url: "https://livejournal.com", cat: "Guest Post", da: 92, niche: ["all"], note: "Classic blogging platform; good for community-based backlinks.", meta: "LiveJournal is a service for journals and blogs, that also offers privacy levels, community, and a friend list." },
+  { name: "Weebly", url: "https://weebly.com", cat: "Guest Post", da: 93, niche: ["business", "ecommerce", "all"], note: "Free website builder; create a niche site to link back to your main domain.", meta: "Weebly's free website builder makes it easy to create a website, blog, or online store." },
+  { name: "Wix", url: "https://wix.com", cat: "Guest Post", da: 94, niche: ["business", "design", "all"], note: "Powerful website builder; use for satellite sites or portfolio links.", meta: "Create a free website with Wix.com. Customize with Wix's free website builder, no coding skills needed." },
+  { name: "Jimdo", url: "https://jimdo.com", cat: "Guest Post", da: 91, niche: ["business", "design", "all"], note: "Easy-to-use website builder for small businesses and portfolios.", meta: "Jimdo is the easiest way to create a website. Over 20 million websites have been created with Jimdo." },
+  { name: "Strikingly", url: "https://strikingly.com", cat: "Guest Post", da: 91, niche: ["startup", "business", "design"], note: "One-page website builder; great for landing page backlinks.", meta: "Strikingly is a free website builder that allows you to create a mobile-optimized website in minutes." },
+  { name: "Webnode", url: "https://webnode.com", cat: "Guest Post", da: 91, niche: ["business", "all"], note: "Simple website builder with a global presence; good for international SEO.", meta: "Webnode is a free website builder. You can create a website in minutes for free." },
+  { name: "Site123", url: "https://site123.com", cat: "Guest Post", da: 91, niche: ["business", "all"], note: "Fastest website builder; create simple sites for backlink diversification.", meta: "SITE123 is the most intuitive and easy to use free website builder on the market." },
+  { name: "Yola", url: "https://yola.com", cat: "Guest Post", da: 91, niche: ["business", "all"], note: "Build a free website and get a high-DA subdomain link.", meta: "Yola is a free website builder that allows you to create a professional website in minutes." },
+  { name: "Moonfruit", url: "https://moonfruit.com", cat: "Guest Post", da: 85, niche: ["design", "creative", "business"], note: "Design-focused website builder; good for creative niche links.", meta: "Moonfruit is a website builder that allows you to create a beautiful website or online store." },
+  { name: "Edublogs", url: "https://edublogs.org", cat: "Guest Post", da: 91, niche: ["education", "writing", "all"], note: "Education-focused blogging platform; highly authoritative .org domain.", meta: "Edublogs is the world's most popular education blogging service. Safe, secure and free." },
+  { name: "Typepad", url: "https://typepad.com", cat: "Guest Post", da: 91, niche: ["writing", "all"], note: "Professional blogging service; reliable for long-term backlinks.", meta: "Typepad is a reliable, flexible blogging platform that puts the focus on your content." },
+  { name: "Ghost", url: "https://ghost.org", cat: "Guest Post", da: 91, niche: ["writing", "tech", "business"], note: "Modern publishing platform; use for high-quality niche blogs.", meta: "Ghost is a powerful app for new-media creators to publish, share, and grow a business around their content." },
+  { name: "Substack", url: "https://substack.com", cat: "Profile Link", da: 92, niche: ["writing", "marketing", "business"], note: "Newsletter platform; profile and post links are highly visible.", meta: "Substack is a platform that makes it simple for a writer to start a paid newsletter." },
+  { name: "EzineArticles", url: "https://ezinearticles.com", cat: "Guest Post", da: 86, niche: ["all"], note: "Classic article directory; good for broad niche coverage.", meta: "EzineArticles allows expert authors in hundreds of niche fields to get massive levels of exposure." },
+  { name: "ArticlesBase", url: "https://articlesbase.com", cat: "Guest Post", da: 82, niche: ["all"], note: "Free article directory; submit content with resource box links.", meta: "ArticlesBase is a free article directory where you can submit your articles for free." },
+  { name: "SelfGrowth", url: "https://selfgrowth.com", cat: "Guest Post", da: 78, niche: ["health", "lifestyle", "psychology"], note: "Self-improvement niche; great for health and wellness links.", meta: "SelfGrowth.com is the most complete guide to Information about Self Improvement, Personal Growth and Self Help on the Internet." },
+  { name: "SlideServe", url: "https://slideserve.com", cat: "Profile Link", da: 88, niche: ["business", "education", "tech"], note: "Share presentations and get profile + description links.", meta: "SlideServe is a global hub of professional digital content." },
+  { name: "Speaker Deck", url: "https://speakerdeck.com", cat: "Profile Link", da: 90, niche: ["tech", "design", "business"], note: "Upload slide decks; profile links are clean and authoritative.", meta: "Speaker Deck is the best way to share presentations online." },
+  { name: "AuthorStream", url: "https://authorstream.com", cat: "Profile Link", da: 85, niche: ["business", "education", "tech"], note: "Presentation sharing platform; good for educational niche links.", meta: "authorSTREAM is a web-based platform for sharing presentations." },
+  { name: "SlideBoom", url: "https://slideboom.com", cat: "Profile Link", da: 80, niche: ["business", "education", "tech"], note: "Share PowerPoint presentations and get profile backlinks.", meta: "SlideBoom is a free service for sharing presentations online." },
+  { name: "DailyMotion (Channel)", url: "https://dailymotion.com/settings/channel", cat: "Social", da: 93, niche: ["video", "all"], note: "Optimize your channel page with a direct website link.", meta: "The latest news, sports, music and entertainment videos on Dailymotion." },
+  { name: "Metacafe", url: "https://metacafe.com", cat: "Social", da: 88, niche: ["video", "entertainment"], note: "Video sharing site; add links in video descriptions.", meta: "Metacafe is a video-sharing website that specializes in short-form video entertainment." },
+  { name: "Veoh", url: "https://veoh.com", cat: "Social", da: 85, niche: ["video", "entertainment"], note: "Video platform; add website URL in profile and video metadata.", meta: "Veoh is a video-sharing website that allows users to find and watch video content." },
+  { name: "Imgur", url: "https://imgur.com", cat: "Social", da: 92, niche: ["all", "viral"], note: "Image sharing; add links in image descriptions and profile bio.", meta: "Imgur is the easiest way to discover and enjoy the magic of the Internet." },
+  { name: "DeviantArt", url: "https://deviantart.com", cat: "Social", da: 92, niche: ["art", "design", "creative"], note: "Artist community; add website link in your profile and artwork descriptions.", meta: "DeviantArt is the world's largest online social community for artists and art enthusiasts." },
+  { name: "ArtStation", url: "https://artstation.com", cat: "Profile Link", da: 88, niche: ["design", "art", "gaming", "creative"], note: "Professional portfolio site for artists; high-quality profile links.", meta: "ArtStation is the leading showcase platform for games, film, media & entertainment artists." },
+  { name: "500px", url: "https://500px.com", cat: "Profile Link", da: 91, niche: ["photography", "creative"], note: "Photography community; add website link in your profile bio.", meta: "500px is a global network of over 15 million photographers." },
+  { name: "Format", url: "https://format.com", cat: "Profile Link", da: 85, niche: ["design", "photography", "creative"], note: "Portfolio builder for creatives; good for niche-specific backlinks.", meta: "Format is an online portfolio builder for photographers, designers, and illustrators." },
+  { name: "Adobe Portfolio", url: "https://portfolio.adobe.com", cat: "Profile Link", da: 96, niche: ["design", "creative", "all"], note: "Free with Creative Cloud; high-DA backlink from Adobe domain.", meta: "Build a personalized website to showcase your creative work with Adobe Portfolio." },
+  { name: "Houzz", url: "https://houzz.com", cat: "Profile Link", da: 92, niche: ["home", "design", "lifestyle"], note: "Home design community; add website link in your professional profile.", meta: "Houzz is the new way to design your home. Browse 25 million interior design photos." },
+  { name: "Zillow", url: "https://zillow.com", cat: "Profile Link", da: 93, niche: ["real estate", "home", "finance"], note: "Real estate platform; add website link in your agent or professional profile.", meta: "The leading real estate and rental marketplace dedicated to empowering consumers with data." },
+  { name: "TripAdvisor", url: "https://tripadvisor.com", cat: "Profile Link", da: 94, niche: ["travel", "lifestyle", "restaurant"], note: "Travel community; add website link in your profile and reviews.", meta: "Tripadvisor helps you find the best hotels, restaurants, and things to do." },
+  { name: "Lonely Planet", url: "https://lonelyplanet.com", cat: "Forum", da: 92, niche: ["travel", "lifestyle"], note: "Travel forum (Thorn Tree); participate and link to your travel guides.", meta: "Lonely Planet is the world's leading travel media company." },
+  { name: "FlyerTalk", url: "https://flyertalk.com", cat: "Forum", da: 85, niche: ["travel", "finance", "lifestyle"], note: "Frequent flyer community; participate and link to relevant travel/finance content.", meta: "FlyerTalk is a community for frequent flyers to share tips and information." },
+  { name: "SkyscraperCity", url: "https://skyscrapercity.com", cat: "Forum", da: 88, niche: ["architecture", "design", "tech", "urban"], note: "Architecture and urban development forum; high authority and niche relevance.", meta: "SkyscraperCity is the world's largest architecture and urban development community." },
+  { name: "City-Data", url: "https://city-data.com", cat: "Forum", da: 88, niche: ["local", "lifestyle", "business", "all"], note: "Local community forum; great for local SEO and general niche links.", meta: "City-Data.com is a website that provides data and information about cities in the United States." },
+  { name: "Mumsnet", url: "https://mumsnet.com", cat: "Forum", da: 88, niche: ["parenting", "lifestyle", "health"], note: "Parenting community; high engagement and authoritative links.", meta: "Mumsnet is the UK's most popular website for parents." },
+  { name: "BabyCenter", url: "https://babycenter.com", cat: "Forum", da: 92, niche: ["parenting", "health", "lifestyle"], note: "Parenting and pregnancy community; high-DA forum links.", meta: "BabyCenter is the #1 pregnancy and parenting digital destination." },
+  { name: "Goodreads", url: "https://goodreads.com", cat: "Profile Link", da: 94, niche: ["writing", "education", "lifestyle"], note: "Book community; add website link in your profile and author page.", meta: "Goodreads is the world's largest site for readers and book recommendations." },
+  { name: "Wattpad", url: "https://wattpad.com", cat: "Profile Link", da: 92, niche: ["writing", "creative", "lifestyle"], note: "Storytelling platform; add website link in your profile bio.", meta: "Wattpad is a website and app for writers to publish new user-generated stories." },
+  { name: "Bandcamp", url: "https://bandcamp.com", cat: "Profile Link", da: 94, niche: ["music", "creative", "audio"], note: "Music platform; add website link in your artist profile.", meta: "Bandcamp is an American online music company." },
+  { name: "Mixcloud", url: "https://mixcloud.com", cat: "Social", da: 91, niche: ["music", "audio", "creative"], note: "Audio streaming service; add website link in your profile bio.", meta: "Mixcloud is a British online audio streaming service." },
+  { name: "Last.fm", url: "https://last.fm", cat: "Social", da: 92, niche: ["music", "audio", "creative"], note: "Music community; add website link in your profile bio.", meta: "Last.fm is a music website that builds a detailed profile of each user's musical taste." },
+  { name: "ReverbNation", url: "https://reverbnation.com", cat: "Profile Link", da: 88, niche: ["music", "audio", "creative"], note: "Music industry platform; add website link in your artist profile.", meta: "ReverbNation is an American company that provides a platform for the music industry." },
+  { name: "SoundClick", url: "https://soundclick.com", cat: "Profile Link", da: 82, niche: ["music", "audio", "creative"], note: "Music community; add website link in your artist profile.", meta: "SoundClick is a music-based social community." },
+  { name: "Audiomack", url: "https://audiomack.com", cat: "Profile Link", da: 88, niche: ["music", "audio", "creative"], note: "Music streaming and discovery platform; add website link in your profile.", meta: "Audiomack is a youth-driven music streaming and discovery platform." },
+  { name: "Spotify (Artist)", url: "https://artists.spotify.com", cat: "Profile Link", da: 96, niche: ["music", "audio", "creative"], note: "Claim your artist profile and add a link to your official website.", meta: "Spotify for Artists provides artists and their teams with the tools to build their audience." },
+  { name: "Apple Music (Artist)", url: "https://artists.apple.com", cat: "Profile Link", da: 99, niche: ["music", "audio", "creative"], note: "Manage your artist profile and include a link to your website.", meta: "Apple Music for Artists gives you the data you need to understand your music's impact." },
+  { name: "TuneIn", url: "https://tunein.com", cat: "Profile Link", da: 91, niche: ["music", "audio", "creative", "news"], note: "Internet radio service; add website link in your station or profile.", meta: "TuneIn is an American audio streaming service delivering live news, radio, sports, music, and podcasts." },
+  { name: "Podbean", url: "https://podbean.com", cat: "Profile Link", da: 91, niche: ["podcast", "audio", "creative"], note: "Podcast service provider; get a high-DA subdomain link and profile link.", meta: "Podbean is a podcast service provider that provides podcast hosting and monetization." },
+  { name: "Anchor.fm", url: "https://anchor.fm", cat: "Profile Link", da: 92, niche: ["podcast", "audio", "creative"], note: "Free podcast hosting by Spotify; high-DA profile and episode links.", meta: "Anchor is an all-in-one platform where you can create, distribute, and monetize your podcast from any device." },
+  { name: "Steam", url: "https://steampowered.com", cat: "Social", da: 96, niche: ["gaming", "tech", "entertainment"], note: "Gaming community; add website link in your profile bio.", meta: "Steam is a video game digital distribution service by Valve." },
+  { name: "Discord", url: "https://discord.com", cat: "Social", da: 96, niche: ["all", "gaming", "tech"], note: "Communication platform; add website link in your profile and server descriptions.", meta: "Discord is the easiest way to talk over voice, video, and text." },
+  { name: "Slack", url: "https://slack.com", cat: "Social", da: 94, niche: ["business", "tech", "saas"], note: "Collaboration platform; add website link in your profile bio.", meta: "Slack is a new way to communicate with your team. It's faster, better organized, and more secure than email." },
+  { name: "Trello", url: "https://trello.com", cat: "Profile Link", da: 94, niche: ["business", "tech", "productivity"], note: "Project management; add website link in your profile bio.", meta: "Trello is a collaboration tool that organizes your projects into boards." },
+  { name: "Notion", url: "https://notion.so", cat: "Profile Link", da: 92, niche: ["business", "tech", "productivity", "all"], note: "All-in-one workspace; share public pages with backlinks to your site.", meta: "Notion is a single space where you can think, write, and plan." },
+  { name: "Flipboard", url: "https://flipboard.com", cat: "Social", da: 92, niche: ["all", "news"], note: "Create magazines and share links; high engagement and traffic potential.", meta: "Flipboard is a social network and news aggregator." },
+  { name: "Slashdot", url: "https://slashdot.org", cat: "Forum", da: 91, niche: ["tech", "science", "programming"], note: "Tech news and discussion; submit links to your technical content.", meta: "Slashdot is a social news website that bills itself as 'News for Nerds. Stuff that Matters'." }
 ];
 
 const CATEGORIES = [
@@ -113,7 +176,7 @@ const ALL_NICHES = Array.from(new Set(DB.flatMap(item => item.niche))).filter(n 
 export default function App() {
   const [url, setUrl] = useState('');
   const [keyword, setKeyword] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilters, setActiveFilters] = useState<string[]>(['all']);
   const [minDA, setMinDA] = useState(0);
   const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
@@ -129,6 +192,7 @@ export default function App() {
   const [broaderTopics, setBroaderTopics] = useState<string[]>([]);
   const [isAnalyzingTopics, setIsAnalyzingTopics] = useState(false);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [isCompact, setIsCompact] = useState(false);
 
   const scoredResults = useMemo(() => {
     const extractKeywords = (u: string, k: string) => {
@@ -259,9 +323,12 @@ export default function App() {
   const analyzeReferenceUrl = async () => {
     if (!referenceUrl) return;
     setIsAnalyzingRef(true);
+    setAnalyzedNiche([]);
+    setAnalyzedDA(null);
+    setBroaderTopics([]);
     try {
-      const prompt = `Analyze the website URL "${referenceUrl}". Determine its primary niches (max 3) and estimate its Domain Authority (DA) on a scale of 1-100. 
-      Return ONLY a JSON object with "niches" (array of strings) and "da" (number). Example: {"niches": ["Tech", "SaaS"], "da": 85}`;
+      const prompt = `Analyze the website URL "${referenceUrl}". Determine its primary niches (max 3), estimate its Domain Authority (DA) on a scale of 1-100, and identify 3-5 broader industry topics or parent niches related to its primary niches. 
+      Return ONLY a JSON object with "niches" (array of strings), "da" (number), and "broaderTopics" (array of strings). Example: {"niches": ["SaaS SEO", "Content Marketing"], "da": 85, "broaderTopics": ["Software", "Technology", "Marketing", "Business"]}`;
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -272,6 +339,7 @@ export default function App() {
       const data = JSON.parse(response.text || "{}");
       if (data.niches) setAnalyzedNiche(data.niches);
       if (data.da) setAnalyzedDA(data.da);
+      if (data.broaderTopics) setBroaderTopics(data.broaderTopics);
       setHasSearched(true);
     } catch (error) {
       console.error("Error analyzing reference URL:", error);
@@ -338,7 +406,7 @@ export default function App() {
 
   const filteredResults = useMemo(() => {
     const filtered = baseFilteredResults.filter(i => {
-      return activeFilter === 'all' || i.cat === activeFilter;
+      return activeFilters.includes('all') || activeFilters.includes(i.cat);
     });
 
     return [...filtered].sort((a, b) => {
@@ -348,7 +416,7 @@ export default function App() {
         return a.da - b.da;
       }
     });
-  }, [baseFilteredResults, activeFilter, sortOrder]);
+  }, [baseFilteredResults, activeFilters, sortOrder]);
 
   const stats = useMemo(() => {
     return {
@@ -362,7 +430,21 @@ export default function App() {
     };
   }, [baseFilteredResults]);
 
-  const isSearching = hasSearched || keyword.length > 0 || selectedNiches.length > 0 || refinement.length > 0;
+  const toggleFilter = (filterId: string) => {
+    setActiveFilters(prev => {
+      if (filterId === 'all') return ['all'];
+      
+      const newFilters = prev.filter(f => f !== 'all');
+      if (newFilters.includes(filterId)) {
+        const updated = newFilters.filter(f => f !== filterId);
+        return updated.length === 0 ? ['all'] : updated;
+      } else {
+        return [...newFilters, filterId];
+      }
+    });
+  };
+
+  const isSearching = hasSearched;
 
   return (
     <div className="min-h-screen bg-bg py-12 px-4 sm:px-6">
@@ -398,7 +480,10 @@ export default function App() {
                   placeholder="e.g. myblog.com"
                   className="w-full h-10 px-4 bg-bg border border-border-strong rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
                   value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    setHasSearched(false);
+                  }}
                 />
               </div>
               <div className="flex-1">
@@ -408,7 +493,10 @@ export default function App() {
                   placeholder="e.g. digital marketing"
                   className="w-full h-10 px-4 bg-bg border border-border-strong rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
                   value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
+                  onChange={(e) => {
+                    setKeyword(e.target.value);
+                    setHasSearched(false);
+                  }}
                 />
               </div>
             </div>
@@ -482,13 +570,18 @@ export default function App() {
               )}
             </div>
 
-            <button
-              onClick={() => handleSearch()}
-              className="h-10 w-full bg-text-main text-white rounded-xl text-sm font-medium hover:opacity-90 active:scale-95 transition-all whitespace-nowrap flex items-center justify-center gap-2 mt-2"
-            >
-              <Link2 className="w-4 h-4" />
-              Find opportunities
-            </button>
+                <button
+                  onClick={() => handleSearch()}
+                  disabled={isGeneratingSuggestions || isAnalyzingTopics}
+                  className="h-10 w-full bg-text-main text-white rounded-xl text-sm font-medium hover:opacity-90 active:scale-95 transition-all whitespace-nowrap flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+                >
+                  {isGeneratingSuggestions || isAnalyzingTopics ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  Find opportunities
+                </button>
           </div>
 
           <div className="mb-4">
@@ -561,9 +654,9 @@ export default function App() {
                 {CATEGORIES.map((cat) => (
                   <button
                     key={cat.id}
-                    onClick={() => setActiveFilter(cat.id)}
+                    onClick={() => toggleFilter(cat.id)}
                     className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                      activeFilter === cat.id
+                      activeFilters.includes(cat.id)
                         ? 'bg-text-main text-white border-text-main'
                         : 'bg-transparent text-text-muted border-border-strong hover:bg-surface-2'
                     }`}
@@ -684,50 +777,50 @@ export default function App() {
                 label="Total found" 
                 value={stats.total} 
                 icon={Link2} 
-                isActive={activeFilter === 'all'}
-                onClick={() => setActiveFilter('all')}
+                isActive={activeFilters.includes('all')}
+                onClick={() => toggleFilter('all')}
               />
               <StatCard 
                 label="Guest posts" 
                 value={stats.guest} 
                 icon={PenLine} 
-                isActive={activeFilter === 'Guest Post'}
-                onClick={() => setActiveFilter('Guest Post')}
+                isActive={activeFilters.includes('Guest Post')}
+                onClick={() => toggleFilter('Guest Post')}
               />
               <StatCard 
                 label="Profile links" 
                 value={stats.profile} 
                 icon={User} 
-                isActive={activeFilter === 'Profile Link'}
-                onClick={() => setActiveFilter('Profile Link')}
+                isActive={activeFilters.includes('Profile Link')}
+                onClick={() => toggleFilter('Profile Link')}
               />
               <StatCard 
                 label="Forums" 
                 value={stats.forum} 
                 icon={MessageSquare} 
-                isActive={activeFilter === 'Forum'}
-                onClick={() => setActiveFilter('Forum')}
+                isActive={activeFilters.includes('Forum')}
+                onClick={() => toggleFilter('Forum')}
               />
               <StatCard 
                 label="Q&A sites" 
                 value={stats.qa} 
                 icon={HelpCircle} 
-                isActive={activeFilter === 'Q&A'}
-                onClick={() => setActiveFilter('Q&A')}
+                isActive={activeFilters.includes('Q&A')}
+                onClick={() => toggleFilter('Q&A')}
               />
               <StatCard 
                 label="Directories" 
                 value={stats.directory} 
                 icon={Folder} 
-                isActive={activeFilter === 'Directory'}
-                onClick={() => setActiveFilter('Directory')}
+                isActive={activeFilters.includes('Directory')}
+                onClick={() => toggleFilter('Directory')}
               />
               <StatCard 
                 label="Social" 
                 value={stats.social} 
                 icon={Globe} 
-                isActive={activeFilter === 'Social'}
-                onClick={() => setActiveFilter('Social')}
+                isActive={activeFilters.includes('Social')}
+                onClick={() => toggleFilter('Social')}
               />
             </motion.div>
           )}
@@ -746,29 +839,47 @@ export default function App() {
                 <div className="text-[10px] font-sans font-semibold text-text-dim uppercase tracking-widest">
                   {filteredResults.length} OPPORTUNITIES FOUND
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-sans font-semibold text-text-dim uppercase tracking-widest">Sort by DA:</span>
-                  <button
-                    onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-                    className="flex items-center gap-1 px-2 py-1 bg-surface border border-border-subtle rounded-lg text-[10px] font-medium text-text-muted hover:border-border-strong transition-all"
-                  >
-                    {sortOrder === 'desc' ? (
-                      <>
-                        High to Low
-                        <ArrowDownWideNarrow className="w-3 h-3" />
-                      </>
-                    ) : (
-                      <>
-                        Low to High
-                        <ArrowUpNarrowWide className="w-3 h-3" />
-                      </>
-                    )}
-                  </button>
+                <div className="flex items-center gap-4">
+                  <div className="flex bg-surface-2 p-1 rounded-xl border border-border-subtle">
+                    <button
+                      onClick={() => setIsCompact(false)}
+                      className={`p-1.5 rounded-lg transition-all ${!isCompact ? 'bg-surface shadow-sm text-accent' : 'text-text-dim hover:text-text-muted'}`}
+                      title="Detailed View"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setIsCompact(true)}
+                      className={`p-1.5 rounded-lg transition-all ${isCompact ? 'bg-surface shadow-sm text-accent' : 'text-text-dim hover:text-text-muted'}`}
+                      title="Compact View"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-sans font-semibold text-text-dim uppercase tracking-widest">Sort by DA:</span>
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+                      className="flex items-center gap-1 px-2 py-1 bg-surface border border-border-subtle rounded-lg text-[10px] font-medium text-text-muted hover:border-border-strong transition-all"
+                    >
+                      {sortOrder === 'desc' ? (
+                        <>
+                          High to Low
+                          <ArrowDownWideNarrow className="w-3 h-3" />
+                        </>
+                      ) : (
+                        <>
+                          Low to High
+                          <ArrowUpNarrowWide className="w-3 h-3" />
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
               <AnimatePresence mode="popLayout">
                 {filteredResults.map((item, idx) => (
-                  <ResultCard key={`${item.name}-${idx}`} item={item} index={idx} />
+                  <ResultCard key={`${item.name}-${idx}`} item={item} index={idx} isCompact={isCompact} />
                 ))}
               </AnimatePresence>
               {filteredResults.length === 0 && (
@@ -802,6 +913,7 @@ function StatCard({ label, value, icon: Icon, isActive, onClick }: { label: stri
 interface ResultCardProps {
   item: any;
   index: number;
+  isCompact?: boolean;
   key?: string;
 }
 
@@ -862,10 +974,10 @@ function LinkStatusChecker({ url }: { url: string }) {
   );
 }
 
-function ResultCard({ item, index }: ResultCardProps) {
+function ResultCard({ item, index, isCompact }: ResultCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [pageInfo, setPageInfo] = useState<{ title: string; h1: string; metaDescription: string } | null>(null);
+  const [pageInfo, setPageInfo] = useState<{ title: string; h1: string; metaDescription: string; firstParagraph: string; favicon: string } | null>(null);
   const [isLoadingInfo, setIsLoadingInfo] = useState(false);
   const Icon = ICON_MAP[item.cat] || Globe;
   const screenshotUrl = `https://s0.wp.com/mshots/v1/${encodeURIComponent(item.url)}?w=400`;
@@ -898,105 +1010,137 @@ function ResultCard({ item, index }: ResultCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.05, 0.5) }}
-      className="group relative bg-surface border border-border-subtle rounded-2xl p-5 hover:border-border-strong transition-all shadow-sm overflow-hidden"
+      className={`group relative bg-surface border border-border-subtle rounded-2xl hover:border-border-strong transition-all shadow-sm overflow-hidden ${isCompact ? 'p-3' : 'p-5'}`}
     >
-      <div className="flex flex-col sm:flex-row gap-5">
+      <div className={`flex ${isCompact ? 'flex-row items-center gap-4' : 'flex-col sm:flex-row gap-5'}`}>
         {/* Screenshot Preview with Zoom */}
-        <div className="w-full sm:w-40 h-24 rounded-xl overflow-hidden bg-surface-2 border border-border-subtle shrink-0 relative group-hover:border-accent/30 transition-colors">
-          <motion.img
-            src={screenshotUrl}
-            alt={`${item.name} screenshot`}
-            className="w-full h-full object-cover object-top"
-            referrerPolicy="no-referrer"
-            loading="lazy"
-            animate={{ scale: isHovered ? 1.15 : 1 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
+        {!isCompact && (
+          <div className="w-full sm:w-40 h-24 rounded-xl overflow-hidden bg-surface-2 border border-border-subtle shrink-0 relative group-hover:border-accent/30 transition-colors">
+            <motion.img
+              src={screenshotUrl}
+              alt={`${item.name} screenshot`}
+              className="w-full h-full object-cover object-top"
+              referrerPolicy="no-referrer"
+              loading="lazy"
+              animate={{ scale: isHovered ? 1.15 : 1 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        )}
 
-        <div className="flex gap-4 flex-1">
-          <div className="w-10 h-10 rounded-xl bg-surface-2 flex items-center justify-center text-text-muted shrink-0 group-hover:bg-accent/5 group-hover:text-accent transition-colors">
-            <Icon className="w-5 h-5" />
+        <div className={`flex gap-4 flex-1 items-center ${isCompact ? '' : 'items-start'}`}>
+          <div className={`${isCompact ? 'w-8 h-8 rounded-lg' : 'w-10 h-10 rounded-xl'} bg-surface-2 flex items-center justify-center text-text-muted shrink-0 group-hover:bg-accent/5 group-hover:text-accent transition-colors`}>
+            <Icon className={isCompact ? 'w-4 h-4' : 'w-5 h-5'} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center flex-wrap gap-2 mb-1">
-              <h3 className="text-base font-medium text-text-main">{item.name}</h3>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${BADGE_COLORS[item.cat]}`}>
+              <h3 className={`${isCompact ? 'text-sm' : 'text-base'} font-medium text-text-main truncate`}>{item.name}</h3>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${BADGE_COLORS[item.cat]}`}>
                 {item.cat}
               </span>
-              <span className="ml-auto text-[10px] font-medium text-text-dim bg-surface-2 px-2 py-0.5 rounded-full">
+              <span className={`ml-auto text-[10px] font-medium text-text-dim bg-surface-2 px-2 py-0.5 rounded-full ${isCompact ? 'hidden sm:block' : ''}`}>
                 DA {item.da}
               </span>
             </div>
-            <div className="flex items-center gap-3 mb-2">
+            <div className={`flex items-center gap-3 ${isCompact ? 'mb-0' : 'mb-2'}`}>
               <a
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-accent hover:underline flex items-center gap-1 break-all"
+                className="text-[13px] text-accent hover:underline flex items-center gap-1 break-all line-clamp-1"
               >
                 {item.url.replace('https://', '')}
                 <ExternalLink className="w-3 h-3" />
               </a>
-              <LinkStatusChecker url={item.url} />
+              {!isCompact && <LinkStatusChecker url={item.url} />}
+              {isCompact && (
+                <span className="sm:hidden text-[10px] font-medium text-text-dim">
+                  DA {item.da}
+                </span>
+              )}
             </div>
             
-            <div className="mt-3">
-              <button 
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-wider hover:opacity-80 transition-opacity mb-1"
-              >
-                Strategy
-                {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              </button>
-              
-              <AnimatePresence initial={false}>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="overflow-hidden"
-                  >
-                    <p className="text-sm text-text-muted leading-relaxed pt-1">
-                      {item.note}
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            {!isCompact && (
+              <div className="mt-3">
+                <button 
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-wider hover:opacity-80 transition-opacity mb-1"
+                >
+                  Strategy
+                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
+                
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-sm text-text-muted leading-relaxed pt-1">
+                        {item.note}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
 
             {/* Meta Preview on Hover */}
             <AnimatePresence>
               {isHovered && (
                 <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 5 }}
-                  className="mt-3 p-3 bg-surface-2 border border-border-subtle rounded-xl"
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                  className={`mt-4 p-4 bg-surface-2 border border-border-strong rounded-2xl shadow-xl z-10 relative ${isCompact ? 'absolute left-0 right-0 top-full mt-2' : ''}`}
                 >
                   {isLoadingInfo ? (
-                    <div className="flex items-center gap-2 text-[10px] text-text-dim">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Fetching live preview...
+                    <div className="flex items-center justify-center py-4 gap-3 text-xs text-text-dim font-medium">
+                      <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                      Analyzing live content...
                     </div>
                   ) : pageInfo ? (
-                    <div className="space-y-2">
-                      <div>
-                        <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider mb-0.5">Page Title:</div>
-                        <p className="text-xs text-text-main font-medium line-clamp-1">{pageInfo.title}</p>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        {pageInfo.favicon && (
+                          <img 
+                            src={pageInfo.favicon} 
+                            alt="favicon" 
+                            className="w-5 h-5 rounded shrink-0 mt-0.5"
+                            onError={(e) => (e.currentTarget.style.display = 'none')}
+                          />
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-bold text-accent uppercase tracking-wider mb-0.5">Live Page Title</div>
+                          <p className="text-sm text-text-main font-semibold leading-tight">{pageInfo.title}</p>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider mb-0.5">Main Heading (H1):</div>
-                        <p className="text-xs text-text-muted line-clamp-1">{pageInfo.h1}</p>
+
+                      <div className="grid grid-cols-1 gap-3 pt-3 border-t border-border-subtle">
+                        <div>
+                          <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider mb-1">Meta Description</div>
+                          <p className="text-xs text-text-muted italic leading-relaxed line-clamp-2">
+                            "{pageInfo.metaDescription}"
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider mb-1">Content Preview</div>
+                          <p className="text-xs text-text-muted leading-relaxed line-clamp-3">
+                            {pageInfo.firstParagraph}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider mb-0.5">Description:</div>
-                        <p className="text-xs text-text-muted italic leading-relaxed line-clamp-2">
-                          "{pageInfo.metaDescription || item.meta}"
-                        </p>
+
+                      <div className="pt-2 flex items-center gap-2">
+                        <div className="text-[10px] font-bold text-text-dim uppercase tracking-wider">Primary Heading:</div>
+                        <span className="text-[10px] px-2 py-0.5 bg-accent/5 text-accent rounded-md font-medium truncate">
+                          {pageInfo.h1}
+                        </span>
                       </div>
                     </div>
                   ) : (
@@ -1011,7 +1155,7 @@ function ResultCard({ item, index }: ResultCardProps) {
               )}
             </AnimatePresence>
           </div>
-          <div className="hidden sm:flex items-center">
+          <div className={`hidden sm:flex items-center ${isCompact ? 'ml-auto' : ''}`}>
             <ChevronRight className="w-5 h-5 text-text-dim opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         </div>

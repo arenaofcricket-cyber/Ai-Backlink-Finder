@@ -29,8 +29,23 @@ async function startServer() {
       const metaDescription = $('meta[name="description"]').attr('content')?.trim() || 
                              $('meta[property="og:description"]').attr('content')?.trim() || 
                              'No description found';
+      
+      // Fetch first meaningful paragraph
+      const firstParagraph = $('p').filter((_, el) => $(el).text().trim().length > 50).first().text().trim() || 
+                            $('p').first().text().trim() || 
+                            'No content preview available';
 
-      res.json({ title, h1, metaDescription });
+      // Favicon detection
+      let favicon = $('link[rel="shortcut icon"]').attr('href') || 
+                    $('link[rel="icon"]').attr('href') || 
+                    '/favicon.ico';
+      
+      if (favicon && !favicon.startsWith('http')) {
+        const urlObj = new URL(url);
+        favicon = new URL(favicon, urlObj.origin).href;
+      }
+
+      res.json({ title, h1, metaDescription, firstParagraph, favicon });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
